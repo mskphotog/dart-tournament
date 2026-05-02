@@ -1,0 +1,360 @@
+/* =============================================================================
+   BRACKET DISPLAY (stacked-card layout)
+   =============================================================================
+   Simpler, reliable layout. No SVG. No connector lines. Just well-organized
+   cards in horizontal columns by round, with sections stacked vertically.
+   ============================================================================= */
+
+
+/* -----------------------------------------------------------------------------
+   ROOT CONTAINER
+   ----------------------------------------------------------------------------- */
+.bracket-display {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6, 32px);
+  padding: var(--space-3, 12px);
+  /* Allow the bracket to claim full available width regardless of parent
+     flex/grid constraints. min-width: 0 prevents flex parents from squeezing us. */
+  width: 100%;
+  min-width: 0;
+}
+
+
+/* -----------------------------------------------------------------------------
+   SECTION (Winner's Bracket / Loser's Bracket / Grand Final)
+   ----------------------------------------------------------------------------- */
+.bracket-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3, 12px);
+}
+
+.bracket-section-title {
+  margin: 0;
+  font-size: var(--font-size-base, 14px);
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary, #666666);
+  border-bottom: 1px solid var(--color-border, #e0e0e0);
+  padding-bottom: var(--space-2, 8px);
+}
+
+/* Horizontal scroll wrapper so wide brackets can scroll without breaking layout */
+.bracket-section-scroll {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: var(--space-2, 8px); /* room for scrollbar without overlapping cards */
+}
+
+
+/* -----------------------------------------------------------------------------
+   ROUNDS (horizontal columns within a section)
+   ----------------------------------------------------------------------------- */
+.bracket-rounds {
+  display: flex;
+  flex-direction: row;
+  gap: var(--space-4, 20px);
+  align-items: flex-start;
+  /* Don't shrink, allow horizontal overflow */
+  width: max-content;
+  min-width: 100%;
+}
+
+.bracket-round {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 10px);
+  /* Minimum width so columns line up cleanly and names have room */
+  min-width: 240px;
+}
+
+.bracket-round-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #999999);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: var(--space-1, 4px);
+}
+
+.bracket-round-matches {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2, 10px);
+}
+
+
+/* -----------------------------------------------------------------------------
+   MATCH CARD (basic styling, applied to all match cards)
+   ----------------------------------------------------------------------------- */
+/* -----------------------------------------------------------------------------
+   MATCH CARD (basic styling, applied to all match cards)
+   -----------------------------------------------------------------------------
+   Note: We use the .bracket-display ancestor selector to bump specificity
+   so any generic .match-card rules elsewhere in the app don't override
+   our intended card width.
+   ----------------------------------------------------------------------------- */
+.bracket-display .match-card {
+  background: var(--color-background-card, #ffffff);
+  border: 1px solid var(--color-border, #e0e0e0);
+  border-radius: 8px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: relative;
+  /* !important is used here to ensure card width isn't overridden by any
+     global .card or framework styles. If your app cleanly separates concerns,
+     this !important can be removed. */
+  width: 280px !important;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+/* Interactive (clickable) cards get hover/focus styling */
+.match-card-interactive {
+  cursor: pointer;
+  transition: border-color 0.15s ease, background-color 0.15s ease,
+              box-shadow 0.15s ease;
+}
+
+.match-card-interactive:hover,
+.match-card-interactive:focus {
+  border-color: var(--color-primary, #1E90FF);
+  background: var(--color-background-secondary, #f8f8f8);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+/* In-progress: emphasized border */
+.match-card-in-progress {
+  border-color: var(--color-primary, #1E90FF);
+  border-width: 2px;
+  /* Subtract 1px from padding to compensate for the thicker border */
+  padding: calc(var(--space-3, 10px) - 1px) calc(var(--space-3, 12px) - 1px);
+}
+
+/* Completed: slightly faded */
+.match-card-completed {
+  opacity: 0.92;
+}
+
+/* Bracket reset: dashed border, signaling its conditional nature */
+.match-card-reset {
+  border-style: dashed;
+  border-color: var(--color-text-secondary, #888);
+}
+
+
+/* -----------------------------------------------------------------------------
+   MATCH CARD HEADER (match number + reset label)
+   ----------------------------------------------------------------------------- */
+.match-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2, 8px);
+  min-height: 16px;
+}
+
+.match-card-number {
+  font-size: 11px;
+  font-style: italic;
+  color: var(--color-text-tertiary, #999999);
+  font-weight: 500;
+}
+
+.match-card-reset-label {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--color-text-secondary, #666666);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+
+/* -----------------------------------------------------------------------------
+   PLAYER ROW (one slot inside the match card)
+   ----------------------------------------------------------------------------- */
+.match-card-player {
+  display: flex !important;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--color-border-light, #f0f0f0);
+  width: 100%;
+  min-width: 0;
+}
+
+.match-card-player:last-of-type {
+  border-bottom: none;
+}
+
+/* Seed prefix (small subtle number) */
+.match-card-seed {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-tertiary, #999999);
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+/* Player name */
+.match-card-name {
+  font-size: 14px;
+  color: var(--color-text-primary, #333333);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  /* flex: 1 means: take all the available space, but allow shrinking */
+  flex: 1 1 auto;
+  /* min-width: 0 is REQUIRED for ellipsis to work inside flexbox */
+  min-width: 0;
+}
+
+/* Score */
+.match-card-score {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text-secondary, #666666);
+  min-width: 18px;
+  text-align: right;
+  flex: 0 0 auto;
+}
+
+
+/* Winner styling */
+.match-card-player-winner .match-card-name {
+  color: var(--color-primary, #1E90FF);
+  font-weight: 700;
+}
+
+.match-card-player-winner .match-card-score {
+  color: var(--color-primary, #1E90FF);
+}
+
+
+/* Loser styling: faded text */
+.match-card-player-loser .match-card-name {
+  color: var(--color-text-tertiary, #999999);
+}
+
+.match-card-player-loser .match-card-score {
+  color: var(--color-text-tertiary, #999999);
+}
+
+
+/* Placeholder slots (TBD or L#): italic, lighter, slightly smaller */
+.match-card-player-placeholder .match-card-name {
+  color: var(--color-text-tertiary, #999999);
+  font-style: italic;
+  font-size: 13px;
+}
+
+
+/* -----------------------------------------------------------------------------
+   STATUS INDICATOR
+   ----------------------------------------------------------------------------- */
+.match-card-status {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-1, 2px);
+}
+
+
+/* -----------------------------------------------------------------------------
+   BYE CARD (special compact styling for auto-advance matches)
+   ----------------------------------------------------------------------------- */
+.match-card-bye {
+  border-style: dashed;
+  background: var(--color-background-secondary, #f8f8f8);
+  opacity: 0.85;
+  padding: var(--space-2, 8px) var(--space-3, 12px);
+}
+
+.match-card-bye .match-card-player {
+  border-bottom: none;
+  padding: var(--space-1, 4px) 0;
+}
+
+.match-card-bye-label {
+  font-size: 10px;
+  font-style: italic;
+  color: var(--color-text-tertiary, #999999);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+
+/* -----------------------------------------------------------------------------
+   BADGE (status indicator pill, may already be defined globally)
+   ----------------------------------------------------------------------------- */
+/* If your app already defines .badge styling, these definitions will be
+   overridden by yours. We provide fallbacks here in case BracketDisplay
+   is rendered in isolation (e.g., in a Storybook or test page). */
+.badge {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.badge-neutral {
+  background: var(--color-background-secondary, #e0e0e0);
+  color: var(--color-text-secondary, #666666);
+}
+
+.badge-primary {
+  background: var(--color-primary, #1E90FF);
+  color: white;
+}
+
+.badge-secondary {
+  background: var(--color-secondary-light, #d0e8ff);
+  color: var(--color-secondary-dark, #0066cc);
+}
+
+.badge-success {
+  background: var(--color-success-light, #d4edda);
+  color: var(--color-success-dark, #155724);
+}
+
+
+/* -----------------------------------------------------------------------------
+   RESPONSIVE: keep cards readable at all viewport sizes
+   -----------------------------------------------------------------------------
+   Cards stay readable (240px) regardless of viewport width. Narrow viewports
+   simply scroll horizontally. This is much better than tiny unreadable cards.
+   ----------------------------------------------------------------------------- */
+@media (max-width: 640px) {
+  .bracket-display {
+    padding: var(--space-2, 8px);
+    gap: var(--space-4, 20px);
+  }
+
+  .bracket-rounds {
+    gap: var(--space-3, 12px);
+  }
+
+  /* Keep card width unchanged so names remain readable. Horizontal scroll
+     handles the overflow. */
+  .bracket-round {
+    min-width: 240px;
+  }
+
+  .match-card {
+    width: 240px;
+  }
+
+  .bracket-display .match-card {
+    width: 240px;
+  }
+}

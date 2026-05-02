@@ -1,0 +1,15 @@
+# Netlify configuration
+# Tells Netlify how to build and serve the React SPA
+
+[build]
+  # The directory Vite outputs the built site to
+  publish = "dist"
+  # Build command Netlify will run on deploy
+  command = "npm run build"
+
+# SPA redirect: any unmatched route returns index.html
+# This lets React Router handle client-side routing
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
