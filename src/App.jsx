@@ -11,6 +11,7 @@ import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
 import StandingsPage from './pages/StandingsPage';
 import TournamentBracketPage from './pages/TournamentBracketPage';
+import TournamentHistoryPage from './pages/TournamentHistoryPage';
 import PlayerProfilePage from './pages/PlayerProfilePage';
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
 import AdminPlayersPage from './pages/admin/AdminPlayersPage';
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/standings" element={<StandingsPage />} />
+        <Route path="/tournaments" element={<TournamentHistoryPage />} />
         <Route path="/tournament/:tournamentId" element={<TournamentBracketPage />} />
         <Route path="/player/:playerId" element={<PlayerProfilePage />} />
 
