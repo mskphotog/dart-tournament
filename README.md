@@ -46,6 +46,7 @@ In Supabase Dashboard > Authentication > Users, click "Add user" and create:
 - Auto-confirm: yes
 
 Then in SQL Editor, run:
+
 ```sql
 UPDATE auth.users SET raw_app_meta_data = raw_app_meta_data || '{"role":"admin"}'::jsonb WHERE email = 'your-admin-email@example.com';
 ```
@@ -70,3 +71,37 @@ npm run dev
    - `VITE_SUPABASE_ANON_KEY`
 
 ## Project Structure
+
+```
+dart-tournament/
+├── supabase/
+│   └── migrations/        # Database schema and seed data
+├── src/
+│   ├── components/        # Reusable UI components
+│   ├── pages/             # Route-level page components
+│   ├── lib/               # Supabase client, bracket logic, utilities
+│   ├── hooks/             # Custom React hooks
+│   └── styles/            # Global CSS and design tokens
+├── public/                # Static assets
+└── index.html             # Entry HTML
+```
+
+## How Double Elimination Works (Implementation Notes)
+
+A double-elimination bracket has two paths:
+
+1. **Winner's Bracket (WB)**: Standard single-elimination. Lose once, drop to Loser's Bracket.
+2. **Loser's Bracket (LB)**: Lose here and you're out of the tournament.
+3. **Grand Finals**: WB winner faces LB winner. If the LB winner wins, they reset the bracket and a second match is played (since the WB winner had not lost yet).
+
+The bracket logic in `src/lib/bracket.js` handles:
+
+- Generating bracket structure for any player count from 6 upward
+- Randomly assigning byes when player count is not a power of 2
+- The R2-bye model: bye players skip Round 1 entirely and start in WB Round 2 paired with R1 winners
+- Advancing winners to the next match
+- Dropping losers from WB to the correct LB position
+- Auto-advancing single-feeder LB matches (when only one player can ever arrive)
+- Triggering bracket reset when LB winner beats WB winner in grand finals
+
+Match numbers reflect play order rather than bracket position, with weighting that prefers giving each player rest between matches (heavy weight) and alternating between WB and LB (light weight).
