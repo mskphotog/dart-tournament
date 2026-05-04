@@ -13,7 +13,7 @@ A mobile-first web application for managing weekly soft-tip dart tournaments wit
 ## Features (v1)
 
 - Single admin login (shared admin account)
-- Persistent player roster + walk-in support
+- Persistent player roster with walk-in support
 - Weekly tournaments with admin-defined game types
 - Match formats configurable per game (BO3, BO5, etc.)
 - Random seeding with random byes for non-power-of-2 player counts
@@ -36,6 +36,7 @@ A mobile-first web application for managing weekly soft-tip dart tournaments wit
    - `supabase/migrations/001_initial_schema.sql`
    - `supabase/migrations/002_rls_policies.sql`
    - `supabase/migrations/003_seed_data.sql`
+   - `supabase/migrations/004_match_number_nullable.sql`
 
 ### 2. Create Admin User
 
@@ -69,31 +70,3 @@ npm run dev
    - `VITE_SUPABASE_ANON_KEY`
 
 ## Project Structure
-
-```
-dart-tournament/
-├── supabase/
-│   └── migrations/        # Database schema and seed data
-├── src/
-│   ├── components/        # Reusable UI components
-│   ├── pages/             # Route-level page components
-│   ├── lib/               # Supabase client, bracket logic, utilities
-│   ├── hooks/             # Custom React hooks
-│   └── styles/            # Global CSS and design tokens
-├── public/                # Static assets
-└── index.html             # Entry HTML
-```
-
-## How Double Elimination Works (Implementation Notes)
-
-A double-elimination bracket has two paths:
-1. **Winner's Bracket (WB)**: Standard single-elimination. Lose once, drop to Loser's Bracket.
-2. **Loser's Bracket (LB)**: Lose here and you're out of the tournament.
-3. **Grand Finals**: WB winner faces LB winner. If the LB winner wins, they reset the bracket and a second match is played (since the WB winner had not lost yet).
-
-The bracket logic in `src/lib/bracket.js` handles:
-- Generating bracket structure for any player count (3 to 64+)
-- Randomly assigning byes when player count isn't a power of 2
-- Advancing winners to the next match
-- Dropping losers from WB to the correct LB position
-- Triggering bracket reset when LB winner beats WB winner in grand finals
