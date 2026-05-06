@@ -53,6 +53,12 @@ export default defineConfig({
         // Precache all built JS/CSS/HTML assets so the app shell loads offline
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
 
+        // Import our custom push notification handler into the generated service worker.
+        // vite-plugin-pwa generates a Workbox caching SW but does NOT include push
+        // event handlers. We add them via importScripts so both caching and push
+        // work from the same service worker file.
+        importScripts: ['/sw-push.js'],
+
         // Runtime caching rules for live network requests
         runtimeCaching: [
           {
