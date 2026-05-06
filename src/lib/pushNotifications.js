@@ -20,16 +20,38 @@
 /**
  * Convert a base64 URL-safe string to a Uint8Array.
  * Required to pass the VAPID public key to the browser's push subscription API.
+ *
+ * This implementation avoids window.atob() entirely and decodes the base64
+ * manually using a lookup table. This is more robust across browsers and
+ * Android WebView environments where atob() can be strict about padding
+ * or character ranges in URL-safe base64 strings.
  */
 function urlBase64ToUint8Array(base64String) {
-  const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = window.atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; i++) {
-    outputArray[i] = rawData.charCodeAt(i);
+  // Base64 character lookup table
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+
+  // Normalise URL-safe base64 to standard base64 and strip any whitespace
+  let base64 = base64String.trim().replace(/-/g, '+').replace(/_/g, '/');
+
+  // Add padding if needed
+  while (base64.length % 4 !== 0) {
+    base64 += '=';
   }
-  return outputArray;
+
+  // Decode manually without atob()
+  const bytes = [];
+  for (let i = 0; i < base64.length; i += 4) {
+    const a = chars.indexOf(base64[i]);
+    const b = chars.indexOf(base64[i + 1]);
+    const c = base64[i + 2] === '=' ? 0 : chars.indexOf(base64[i + 2]);
+    const d = base64[i + 3] === '=' ? 0 : chars.indexOf(base64[i + 3]);
+
+    bytes.push((a << 2) | (b >> 4));
+    if (base64[i + 2] !== '=') bytes.push(((b & 0xf) << 4) | (c >> 2));
+    if (base64[i + 3] !== '=') bytes.push(((c & 0x3) << 6) | d);
+  }
+
+  return new Uint8Array(bytes);
 }
 
 
