@@ -15,6 +15,17 @@
  *    and we open/focus the app
  */
 
+// Force the new service worker to activate immediately without waiting for
+// all existing clients (tabs/PWA windows) to close first.
+// This ensures push notifications work as soon as the SW updates.
+self.addEventListener('install', function (event) {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', function (event) {
+  event.waitUntil(clients.claim());
+});
+
 // Listen for incoming push messages from the server
 self.addEventListener('push', function (event) {
   // Guard: if no data was sent, show a generic notification
