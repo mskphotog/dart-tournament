@@ -1,0 +1,104 @@
+/* =============================================================================
+   NOTIFICATION PROMPT
+   A fixed banner at the bottom of the screen asking players to subscribe
+   to push notifications.
+   ============================================================================= */
+
+.notification-prompt {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 200;
+  background-color: var(--color-bg-card);
+  border-top: 2px solid var(--color-primary);
+  box-shadow: 0 -4px 16px rgba(0, 0, 0, 0.3);
+  padding: var(--space-3) var(--space-4);
+  animation: slide-up 0.3s ease-out;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.notification-prompt-content {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.notification-prompt-icon {
+  font-size: 1.75rem;
+  flex-shrink: 0;
+}
+
+.notification-prompt-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.notification-prompt-text strong {
+  font-size: var(--font-size-sm);
+  font-weight: var(--font-weight-bold);
+  color: var(--color-text-primary);
+}
+
+.notification-prompt-text span {
+  font-size: var(--font-size-xs);
+  color: var(--color-text-secondary);
+}
+
+.notification-prompt-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex-shrink: 0;
+}
+
+.notification-prompt-message {
+  font-size: var(--font-size-xs);
+  color: var(--color-success);
+  font-weight: var(--font-weight-medium);
+}
+
+/* Small button variants */
+.btn-sm {
+  padding: var(--space-1) var(--space-3);
+  font-size: var(--font-size-xs);
+  min-height: 32px;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+}
+
+.btn-ghost:hover {
+  background-color: var(--color-bg-secondary);
+  color: var(--color-text-primary);
+}
+
+/* Mobile: stack vertically on very small screens */
+@media (max-width: 480px) {
+  .notification-prompt-content {
+    flex-wrap: wrap;
+  }
+
+  .notification-prompt-actions {
+    width: 100%;
+    justify-content: flex-end;
+  }
+}

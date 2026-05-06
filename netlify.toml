@@ -6,9 +6,16 @@
   publish = "dist"
   # Build command Netlify will run on deploy
   command = "npm run build"
+  # Serverless functions directory
+  functions = "netlify/functions"
+
+# Node.js version for serverless functions
+[functions]
+  node_bundler = "esbuild"
 
 # SPA redirect: any unmatched route returns index.html
 # This lets React Router handle client-side routing
+# NOTE: this must come AFTER the functions config and be the last redirect
 [[redirects]]
   from = "/*"
   to = "/index.html"

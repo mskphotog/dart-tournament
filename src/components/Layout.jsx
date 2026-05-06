@@ -9,6 +9,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { useState } from 'react';
 import { useAuth } from '../hooks/AuthContext';
+import NotificationPrompt from './NotificationPrompt';
 import './Layout.css';
 
 export default function Layout({ children }) {
@@ -143,6 +144,9 @@ export default function Layout({ children }) {
       <main className="app-main">
         {children}
       </main>
+
+      {/* Push notification permission prompt (non-admin pages only) */}
+      <NotificationPrompt />
 
       {/* Footer */}
       <footer className="app-footer">

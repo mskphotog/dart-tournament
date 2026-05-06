@@ -9,6 +9,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
+import SendNotificationPanel from '../../components/SendNotificationPanel';
 
 export default function AdminDashboardPage() {
   const [tournaments, setTournaments] = useState([]);
@@ -196,6 +197,9 @@ export default function AdminDashboardPage() {
           </form>
         </div>
       )}
+
+      {/* Push Notification Panel */}
+      <SendNotificationPanel />
 
       {/* Tournament list */}
       <h2>All Tournaments</h2>
