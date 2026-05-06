@@ -64,15 +64,19 @@
   --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
   --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
 
-  /* Typography */
+  /* Typography
+   * Using rem units so Android system font-size preferences are respected.
+   * The html font-size is set to 16px (browser default), making 1rem = 16px.
+   * Users who set larger text in Android Settings will see larger text here.
+   */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  --font-size-xs: 12px;
-  --font-size-sm: 14px;
-  --font-size-base: 16px;
-  --font-size-lg: 18px;
-  --font-size-xl: 20px;
-  --font-size-2xl: 24px;
-  --font-size-3xl: 32px;
+  --font-size-xs: 0.8rem;    /* 12.8px */
+  --font-size-sm: 0.9rem;    /* 14.4px */
+  --font-size-base: 1rem;    /* 16px */
+  --font-size-lg: 1.125rem;  /* 18px */
+  --font-size-xl: 1.25rem;   /* 20px */
+  --font-size-2xl: 1.5rem;   /* 24px */
+  --font-size-3xl: 2rem;     /* 32px */
 
   --font-weight-normal: 400;
   --font-weight-medium: 500;
@@ -185,6 +189,19 @@
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+html {
+  /* Base font size: 16px on desktop, 18px on mobile for better readability
+   * on small high-DPI screens like the Pixel 10. All rem values scale with this.
+   */
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  html {
+    font-size: 18px; /* bumps all rem-based text up proportionally on mobile */
+  }
 }
 
 html,
@@ -525,10 +542,32 @@ h3 {
 
 /* Mobile-specific tweaks */
 @media (max-width: 600px) {
+  /* Headings scale down slightly on mobile so they don't overflow */
   h1 { font-size: var(--font-size-2xl); }
   h2 { font-size: var(--font-size-xl); }
+  h3 { font-size: var(--font-size-lg); }
 
+  /* More breathing room on small screens */
   .container {
-    padding: 0 var(--space-3);
+    padding: 0 var(--space-4);
+  }
+
+  /* Larger touch targets for buttons on mobile */
+  .btn {
+    min-height: 48px;
+    padding: var(--space-3) var(--space-5);
+  }
+
+  /* Larger form inputs on mobile to prevent iOS/Android zoom-on-focus */
+  .form-input,
+  .form-select,
+  .form-textarea {
+    min-height: 48px;
+    font-size: 1rem; /* prevent browser zoom on focus (requires >= 16px) */
+  }
+
+  /* Cards: reduce padding slightly on mobile */
+  .card {
+    padding: var(--space-4);
   }
 }
