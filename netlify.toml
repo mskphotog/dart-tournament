@@ -13,6 +13,26 @@
 [functions]
   node_bundler = "esbuild"
 
+# Cache-Control headers
+# Vite hashes all JS/CSS asset filenames on build (e.g. index-3f8a2c.js),
+# so it is safe to cache them for 1 year. index.html is never hashed and
+# must always revalidate so users get the latest app shell. The service
+# worker itself must never be cached or updates won't be detected.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
 # SPA redirect: any unmatched route returns index.html
 # This lets React Router handle client-side routing
 # NOTE: this must come AFTER the functions config and be the last redirect

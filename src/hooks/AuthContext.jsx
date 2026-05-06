@@ -4,6 +4,11 @@
  * Provides current user state and admin status to the entire app via React
  * Context. Listens to Supabase auth state changes so the UI updates
  * automatically when the admin logs in/out.
+ *
+ * Performance note: We rely solely on onAuthStateChange, which fires an
+ * INITIAL_SESSION event synchronously from the localStorage cache on mount.
+ * This eliminates the blocking network round-trip that getSession() caused,
+ * removing the 5–7 second white-screen delay when resuming the PWA.
  */
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -18,15 +23,15 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // On mount: check if there's an existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    // Subscribe to auth state changes (login, logout, token refresh)
+    // onAuthStateChange fires INITIAL_SESSION synchronously from the
+    // localStorage cache — no network round-trip needed for the first render.
+    // Subsequent events (TOKEN_REFRESHED, SIGNED_IN, SIGNED_OUT) keep state
+    // in sync with the server automatically.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
+      // Mark loading complete on the first event (INITIAL_SESSION), which
+      // fires synchronously so the spinner is never shown on resume.
+      setLoading(false);
     });
 
     // Cleanup subscription on unmount
