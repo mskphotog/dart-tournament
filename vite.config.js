@@ -6,16 +6,31 @@ import { VitePWA } from 'vite-plugin-pwa';
  * Vite config for the dart tournament app.
  *
  * React plugin enables JSX and Fast Refresh during development.
- * VitePWA plugin auto-generates the service worker and injects the web app manifest.
+ * VitePWA plugin generates the service worker using the injectManifest
+ * strategy, which takes our custom sw-src.js and injects the precache
+ * manifest into it at build time.
+ *
+ * WHY injectManifest instead of generateSW:
+ * The generateSW strategy uses importScripts('/sw-push.js') to add push
+ * handlers, which causes a blocking network fetch every time the service
+ * worker restarts (~30s idle timeout). This was causing 16-second load
+ * delays. With injectManifest, all code lives in a single self-contained
+ * sw.js with no external dependencies.
  */
 export default defineConfig({
   plugins: [
     react(),
 
     VitePWA({
-      // 'autoUpdate' means the service worker updates silently in the background
-      // and the new version activates the next time the user opens the app.
+      // 'autoUpdate' silently updates the SW in the background
       registerType: 'autoUpdate',
+
+      // Use injectManifest so we can write a fully custom SW source file.
+      // vite-plugin-pwa will inject the precache manifest into self.__WB_MANIFEST
+      // and output the final sw.js to dist/.
+      strategies: 'injectManifest',
+      srcDir: 'src',
+      filename: 'sw-src.js',
 
       // Include key static assets in the service worker precache
       includeAssets: [
@@ -48,49 +63,9 @@ export default defineConfig({
         ],
       },
 
-      // Workbox configuration - controls how assets and API responses are cached
-      workbox: {
-        // Precache all built JS/CSS/HTML assets so the app shell loads offline
+      // injectManifest config: tell Workbox which files to precache
+      injectManifest: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-
-        // Import our custom push notification handler into the generated service worker.
-        // vite-plugin-pwa generates a Workbox caching SW but does NOT include push
-        // event handlers. We add them via importScripts so both caching and push
-        // work from the same service worker file.
-        importScripts: ['/sw-push.js'],
-
-        // Runtime caching rules for live network requests
-        runtimeCaching: [
-          {
-            // Cache Supabase REST API responses (bracket data, standings, etc.)
-            // NetworkFirst: try network first, fall back to cache if offline.
-            // Players see live data when online and last-known data when offline.
-            urlPattern: ({ url }) =>
-              url.hostname.endsWith('.supabase.co') &&
-              url.pathname.startsWith('/rest/'),
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'supabase-api-cache',
-              expiration: {
-                maxEntries: 50,
-                maxAgeSeconds: 60 * 60 * 24, // 24 hours
-              },
-              networkTimeoutSeconds: 5,
-            },
-          },
-          {
-            // Cache Google Fonts if used in the future
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts-cache',
-              expiration: {
-                maxEntries: 10,
-                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
-              },
-            },
-          },
-        ],
       },
     }),
   ],

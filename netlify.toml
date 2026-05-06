@@ -28,8 +28,14 @@
   [headers.values]
     Cache-Control = "public, max-age=0, must-revalidate"
 
+# Service worker files must never be cached so updates are always detected
 [[headers]]
   for = "/sw.js"
+  [headers.values]
+    Cache-Control = "no-cache, no-store, must-revalidate"
+
+[[headers]]
+  for = "/sw-src.js"
   [headers.values]
     Cache-Control = "no-cache, no-store, must-revalidate"
 
