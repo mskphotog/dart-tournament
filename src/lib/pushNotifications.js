@@ -107,6 +107,18 @@ export async function subscribeToPush() {
   }
 
   // Step 4: Save subscription to backend
+  // NOTE: We use a safe loop to convert the key ArrayBuffers to base64 strings.
+  // Using the spread operator (...new Uint8Array) can cause "Maximum call stack
+  // size exceeded" on some Android devices when the array is large.
+  function arrayBufferToBase64(buffer) {
+    const bytes = new Uint8Array(buffer);
+    let binary = '';
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
   try {
     const response = await fetch('/.netlify/functions/save-subscription', {
       method: 'POST',
@@ -114,8 +126,8 @@ export async function subscribeToPush() {
       body: JSON.stringify({
         endpoint: subscription.endpoint,
         keys: {
-          p256dh: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('p256dh')))),
-          auth: btoa(String.fromCharCode(...new Uint8Array(subscription.getKey('auth')))),
+          p256dh: arrayBufferToBase64(subscription.getKey('p256dh')),
+          auth: arrayBufferToBase64(subscription.getKey('auth')),
         },
         userAgent: navigator.userAgent,
       }),
