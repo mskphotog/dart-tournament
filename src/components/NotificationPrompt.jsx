@@ -5,9 +5,13 @@
  * players if they want to receive push notifications for match updates.
  *
  * Behavior:
- * - Only shown if push is supported AND permission has not yet been decided
- * - Dismissed permanently if the user clicks "No thanks" (stored in localStorage)
- * - Disappears automatically after subscribing successfully
+ * - Only shown if push is supported in this browser
+ * - Shown whenever Notification.permission === 'default' (not yet decided)
+ *   OR when permission is 'granted' but no active subscription exists in the
+ *   service worker (e.g., after a browser reset or cache clear)
+ * - Dismissed permanently via localStorage ONLY when user clicks "No thanks"
+ *   while permission is 'default' — if permission is reset by the browser,
+ *   localStorage is also cleared so the prompt re-appears
  * - Not shown on admin pages (admins have their own notification controls)
  */
 
@@ -33,14 +37,28 @@ export default function NotificationPrompt() {
     // Don't show on admin pages
     if (location.pathname.startsWith('/admin')) return;
 
-    // Check if push is supported and permission not yet decided
+    // Push must be supported in this browser
     if (!isPushSupported()) return;
-    if (getNotificationPermission() !== 'default') return;
 
-    // Check if user previously dismissed the prompt
+    const permission = getNotificationPermission();
+
+    // If permission was explicitly denied by the user in the browser, nothing
+    // we can do — the browser blocks us from asking again.
+    if (permission === 'denied') return;
+
+    // If permission is 'default' (never asked, or reset by user):
+    // Clear any stale localStorage dismissal so the prompt re-appears.
+    if (permission === 'default') {
+      localStorage.removeItem(DISMISSED_KEY);
+    }
+
+    // If user previously clicked "No thanks" while permission was 'default',
+    // respect that choice and don't show again.
     if (localStorage.getItem(DISMISSED_KEY) === 'true') return;
 
-    // Check if already subscribed (e.g., returning visitor)
+    // Check if there is already an active push subscription in the service worker.
+    // This covers the case where permission is 'granted' but the subscription
+    // was lost (e.g., after clearing site data or reinstalling the PWA).
     isAlreadySubscribed().then((subscribed) => {
       if (!subscribed) {
         // Small delay so the prompt doesn't appear instantly on page load
@@ -59,15 +77,19 @@ export default function NotificationPrompt() {
     setSubscribing(false);
 
     if (result.success) {
-      setMessage('You are now subscribed to match notifications.');
-      setTimeout(() => setVisible(false), 2000);
+      setMessage('You are now subscribed to match notifications!');
+      setTimeout(() => setVisible(false), 2500);
     } else {
       setMessage(result.reason || 'Something went wrong. Try again.');
     }
   }
 
   function handleDismiss() {
-    localStorage.setItem(DISMISSED_KEY, 'true');
+    // Only permanently dismiss if permission is still 'default' — if it was
+    // granted and then reset, we want the prompt to re-appear next time.
+    if (getNotificationPermission() === 'default') {
+      localStorage.setItem(DISMISSED_KEY, 'true');
+    }
     setVisible(false);
   }
 
