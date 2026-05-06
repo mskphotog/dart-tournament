@@ -103,7 +103,9 @@ export async function subscribeToPush() {
     });
   } catch (err) {
     console.error('Push subscription error:', err);
-    return { success: false, reason: 'Failed to subscribe to push notifications.' };
+    // Surface the actual error message so it can be debugged
+    const detail = err && err.message ? err.message : String(err);
+    return { success: false, reason: `Subscribe failed: ${detail}` };
   }
 
   // Step 4: Save subscription to backend
