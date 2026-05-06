@@ -27,6 +27,24 @@ import './NotificationPrompt.css';
 
 const DISMISSED_KEY = 'push_prompt_dismissed';
 
+/**
+ * Detect if the app is running in standalone mode (installed to home screen).
+ * On iOS, Web Push only works when the PWA is installed — showing the prompt
+ * in a regular Safari browser tab would confuse users because tapping
+ * "Yes, notify me" would silently fail. We only show the prompt when:
+ *   - Running in standalone mode (installed PWA), OR
+ *   - Running on a non-iOS browser (Android Chrome, desktop) where push
+ *     works from a regular browser tab
+ */
+function isStandaloneOrNonIOS() {
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone =
+    window.matchMedia('(display-mode: standalone)').matches ||
+    window.navigator.standalone === true;
+  // On iOS: only show if installed (standalone). On all other platforms: always show.
+  return !isIOS || isStandalone;
+}
+
 export default function NotificationPrompt() {
   const location = useLocation();
   const [visible, setVisible] = useState(false);
@@ -39,6 +57,11 @@ export default function NotificationPrompt() {
 
     // Push must be supported in this browser
     if (!isPushSupported()) return;
+
+    // On iOS, only show the prompt when the PWA is installed to the home screen.
+    // Web Push on iOS requires standalone mode — showing the prompt in Safari
+    // would silently fail and confuse users.
+    if (!isStandaloneOrNonIOS()) return;
 
     const permission = getNotificationPermission();
 
