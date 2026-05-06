@@ -5,26 +5,22 @@
  * vite-plugin-pwa's `importScripts` option. It adds push event handling
  * on top of the auto-generated caching service worker.
  *
+ * IMPORTANT: Do NOT add install/activate event listeners here.
+ * vite-plugin-pwa (with registerType: 'autoUpdate') already calls
+ * self.skipWaiting() and clientsClaim() in the generated sw.js.
+ * Duplicating them here creates two competing install handlers that
+ * cause an alternating slow/fast load pattern — every other open triggers
+ * a forced page reload as the SW re-installs itself unnecessarily.
+ *
  * HOW PUSH WORKS
  * --------------
  * 1. Admin sends a notification via the Netlify send-notification function
- * 2. Google's FCM (Firebase Cloud Messaging) delivers it to this service worker
+ * 2. The push message is delivered to this service worker
  * 3. The 'push' event fires here with the notification payload
  * 4. We call self.registration.showNotification() to display it on the device
  * 5. If the user taps the notification, the 'notificationclick' event fires
  *    and we open/focus the app
  */
-
-// Force the new service worker to activate immediately without waiting for
-// all existing clients (tabs/PWA windows) to close first.
-// This ensures push notifications work as soon as the SW updates.
-self.addEventListener('install', function (event) {
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', function (event) {
-  event.waitUntil(clients.claim());
-});
 
 // Listen for incoming push messages from the server
 self.addEventListener('push', function (event) {
