@@ -241,6 +241,7 @@ function MatchCard({
         slot={slot1}
         isWinner={player1IsWinner}
         isLoser={player1IsLoser}
+        throwsFirst={match.throws_first_id && match.throws_first_id === match.player1_id}
       />
 
       {/* Player 2 row */}
@@ -248,6 +249,7 @@ function MatchCard({
         slot={slot2}
         isWinner={player2IsWinner}
         isLoser={player2IsLoser}
+        throwsFirst={match.throws_first_id && match.throws_first_id === match.player2_id}
       />
 
       {/* Status indicator */}
@@ -263,7 +265,7 @@ function MatchCard({
 // PLAYER ROW (one player slot inside a match card)
 // =============================================================================
 
-function PlayerRow({ slot, isWinner, isLoser }) {
+function PlayerRow({ slot, isWinner, isLoser, throwsFirst }) {
   let cls = 'match-card-player';
   if (isWinner) cls += ' match-card-player-winner';
   if (isLoser) cls += ' match-card-player-loser';
@@ -274,6 +276,11 @@ function PlayerRow({ slot, isWinner, isLoser }) {
       {/* Seed prefix (only shown when present, only for WB R1 with real player) */}
       {slot.seed != null && (
         <span className="match-card-seed">{slot.seed}</span>
+      )}
+
+      {/* Throws-first indicator */}
+      {throwsFirst && (
+        <span className="match-card-throws-first" title="Throws first">&#127919;</span>
       )}
 
       {/* Player name or placeholder label (TBD, L#, etc.) */}

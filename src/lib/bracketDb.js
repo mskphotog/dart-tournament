@@ -113,6 +113,11 @@ export async function generateAndSaveBracket(tournamentId, topSeedPlayerId = nul
       winner_id: m.winner_id || null,
       games_to_win: m.games_to_win,
       status: m.status,
+      // Randomly assign who throws first for matches that start ready
+      throws_first_id:
+        m.status === 'ready' && m.player1_id && m.player2_id
+          ? (Math.random() < 0.5 ? m.player1_id : m.player2_id)
+          : null,
       // next_match_*_id pointers come in pass 2
     }));
 
@@ -360,6 +365,7 @@ async function advanceFromMatch(match, winnerId, loserId) {
             player1_id: winnerId,
             player2_id: loserId,
             status: 'ready',
+            throws_first_id: Math.random() < 0.5 ? winnerId : loserId,
           })
           .eq('id', resetMatch.id);
       }
@@ -442,6 +448,8 @@ async function placePlayerInMatch(matchId, playerId, slot) {
 
   if (newP1 && newP2) {
     updateData.status = 'ready';
+    // Randomly assign who throws first
+    updateData.throws_first_id = Math.random() < 0.5 ? newP1 : newP2;
   }
 
   await supabase.from('matches').update(updateData).eq('id', matchId);

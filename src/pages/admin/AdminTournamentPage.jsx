@@ -1163,15 +1163,30 @@ function ScoringModal({
           Best of {match.games_to_win * 2 - 1}
         </h2>
 
+        {/* Throws-first indicator */}
+        {match.throws_first_id && (player1 || player2) && (
+          <div className="mb-3" style={{ fontSize: 'var(--font-size-sm)', color: 'var(--color-text-secondary)' }}>
+            &#127919; <strong>
+              {match.throws_first_id === match.player1_id ? (player1?.name || 'Player 1') : (player2?.name || 'Player 2')}
+            </strong> throws first
+          </div>
+        )}
+
         {/* Score display */}
         <div className="score-display mb-4">
           <div className={`score-side ${match.winner_id === match.player1_id ? 'winner' : ''}`}>
-            <div className="score-name">{player1 ? player1.name : 'TBD'}</div>
+            <div className="score-name">
+              {match.throws_first_id === match.player1_id && <span style={{ marginRight: '4px' }}>&#127919;</span>}
+              {player1 ? player1.name : 'TBD'}
+            </div>
             <div className="score-number">{match.player1_score || 0}</div>
           </div>
           <div className="score-vs">vs</div>
           <div className={`score-side ${match.winner_id === match.player2_id ? 'winner' : ''}`}>
-            <div className="score-name">{player2 ? player2.name : 'TBD'}</div>
+            <div className="score-name">
+              {match.throws_first_id === match.player2_id && <span style={{ marginRight: '4px' }}>&#127919;</span>}
+              {player2 ? player2.name : 'TBD'}
+            </div>
             <div className="score-number">{match.player2_score || 0}</div>
           </div>
         </div>
