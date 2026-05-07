@@ -98,7 +98,7 @@
    our intended card width.
    ----------------------------------------------------------------------------- */
 .bracket-display .match-card {
-  background: var(--color-background-card, #ffffff);
+  background: var(--color-bg-card, #ffffff);
   border: 1px solid var(--color-border, #e0e0e0);
   border-radius: 8px;
   padding: 10px 12px;
@@ -124,7 +124,7 @@
 .match-card-interactive:hover,
 .match-card-interactive:focus {
   border-color: var(--color-primary, #1E90FF);
-  background: var(--color-background-secondary, #f8f8f8);
+  background: var(--color-bg-secondary, #f8f8f8);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
@@ -271,7 +271,7 @@
    ----------------------------------------------------------------------------- */
 .match-card-bye {
   border-style: dashed;
-  background: var(--color-background-secondary, #f8f8f8);
+  background: var(--color-bg-secondary, #f8f8f8);
   opacity: 0.85;
   padding: var(--space-2, 8px) var(--space-3, 12px);
 }
