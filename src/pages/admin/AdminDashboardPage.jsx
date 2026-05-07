@@ -63,8 +63,8 @@ export default function AdminDashboardPage() {
     e.preventDefault();
     setError('');
 
-    if (!tournamentDate || !selectedGameTypeId) {
-      setError('Date and game type are required');
+    if (!tournamentDate) {
+      setError('Date is required');
       return;
     }
 
@@ -73,7 +73,6 @@ export default function AdminDashboardPage() {
     const payload = {
       tournament_date: tournamentDate,
       name: tournamentName || null,
-      game_type_id: selectedGameTypeId,
       games_to_win_override: gamesToWinOverride ? Number(gamesToWinOverride) : null,
       status: 'setup',
     };
@@ -95,7 +94,6 @@ export default function AdminDashboardPage() {
     setShowCreateForm(false);
     setTournamentDate('');
     setTournamentName('');
-    setSelectedGameTypeId('');
     setGamesToWinOverride('');
     await loadTournaments();
   }
@@ -145,28 +143,6 @@ export default function AdminDashboardPage() {
                 onChange={(e) => setTournamentName(e.target.value)}
                 placeholder="e.g., Holiday Special"
               />
-            </div>
-
-            <div className="form-group">
-              <label className="form-label">Game Type *</label>
-              <select
-                className="form-select"
-                value={selectedGameTypeId}
-                onChange={(e) => setSelectedGameTypeId(e.target.value)}
-                required
-              >
-                <option value="">Select a game...</option>
-                {gameTypes.map((gt) => (
-                  <option key={gt.id} value={gt.id}>
-                    {gt.name} (Best of {gt.default_games_to_win * 2 - 1})
-                  </option>
-                ))}
-              </select>
-              {gameTypes.length === 0 && (
-                <p className="form-error">
-                  No game types available. <Link to="/admin/game-types">Add one first</Link>.
-                </p>
-              )}
             </div>
 
             <div className="form-group">
