@@ -47,6 +47,10 @@ export default function AdminTournamentPage() {
   const [generatingBracket, setGeneratingBracket] = useState(false);
   const [bracketError, setBracketError] = useState('');
 
+  // Game type selection modal (shown after seed draw, before bracket generation)
+  const [gameTypeModal, setGameTypeModal] = useState(null); // { topSeedName, selectedGameTypeId }
+  const [allGameTypes, setAllGameTypes] = useState([]);
+
   // Match scoring modal state
   const [scoringMatch, setScoringMatch] = useState(null);
   const [scoringError, setScoringError] = useState('');
@@ -101,8 +105,18 @@ export default function AdminTournamentPage() {
       loadMatches(),
       loadTournamentPlayers(),
       loadAllPlayers(),
+      loadGameTypes(),
     ]);
     setLoading(false);
+  }
+
+  async function loadGameTypes() {
+    const { data } = await supabase
+      .from('game_types')
+      .select('*')
+      .eq('is_active', true)
+      .order('name');
+    setAllGameTypes(data || []);
   }
 
   async function loadTournament() {
@@ -209,7 +223,8 @@ export default function AdminTournamentPage() {
   // BRACKET GENERATION
   // ---------------------------------------------------------------------------
 
-  async function handleGenerateBracket() {
+  // Step 1: Do a random seed draw to find the #1 seed, then show game type modal
+  function handleGenerateBracket() {
     setBracketError('');
 
     if (tournamentPlayers.length < 6) {
@@ -217,13 +232,34 @@ export default function AdminTournamentPage() {
       return;
     }
 
-    const ok = window.confirm(
-      `Generate the bracket with ${tournamentPlayers.length} players? Once generated, players cannot be added or removed without regenerating.`
-    );
-    if (!ok) return;
+    // Pick a random player to be the #1 seed
+    const randomIndex = Math.floor(Math.random() * tournamentPlayers.length);
+    const topSeedPlayer = tournamentPlayers[randomIndex].player;
 
+    // Show the game type selection modal
+    setGameTypeModal({
+      topSeedName: topSeedPlayer.name,
+      topSeedPlayerId: topSeedPlayer.id,
+      selectedGameTypeId: tournament.game_type_id || '',
+    });
+  }
+
+  // Step 2: Called when admin confirms game type in the modal
+  async function handleConfirmGameType() {
+    if (!gameTypeModal.selectedGameTypeId) return;
+
+    setGameTypeModal(null);
     setGeneratingBracket(true);
-    const result = await generateAndSaveBracket(tournamentId);
+
+    // Update the tournament's game_type_id if it changed
+    if (gameTypeModal.selectedGameTypeId !== tournament.game_type_id) {
+      await supabase
+        .from('tournaments')
+        .update({ game_type_id: gameTypeModal.selectedGameTypeId })
+        .eq('id', tournamentId);
+    }
+
+    const result = await generateAndSaveBracket(tournamentId, gameTypeModal.topSeedPlayerId);
     setGeneratingBracket(false);
 
     if (!result.success) {
@@ -231,7 +267,6 @@ export default function AdminTournamentPage() {
       return;
     }
 
-    // Reload everything since status changed and matches were created
     await loadAll();
   }
 
@@ -518,6 +553,47 @@ export default function AdminTournamentPage() {
       {tournament.status === 'cancelled' && (
         <div className="empty-state">
           <p>This tournament was cancelled.</p>
+        </div>
+      )}
+
+      {/* Game type selection modal — shown after seed draw, before bracket generation */}
+      {gameTypeModal && (
+        <div className="modal-overlay" onClick={() => setGameTypeModal(null)}>
+          <div className="modal-content" onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px' }}>
+            <h2 style={{ marginBottom: 'var(--space-3)' }}>Game of the Night</h2>
+            <p style={{ marginBottom: 'var(--space-4)' }}>
+              <strong>{gameTypeModal.topSeedName}</strong> has the #1 seed and gets to choose tonight's game.
+            </p>
+            <div className="form-group">
+              <label className="form-label">Select Game Type</label>
+              <select
+                className="form-input"
+                value={gameTypeModal.selectedGameTypeId}
+                onChange={(e) =>
+                  setGameTypeModal((prev) => ({ ...prev, selectedGameTypeId: e.target.value }))
+                }
+              >
+                <option value="">-- Choose a game --</option>
+                {allGameTypes.map((gt) => (
+                  <option key={gt.id} value={gt.id}>
+                    {gt.name} (Best of {gt.default_games_to_win * 2 - 1})
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex gap-3 mt-4">
+              <button
+                className="btn btn-primary"
+                onClick={handleConfirmGameType}
+                disabled={!gameTypeModal.selectedGameTypeId}
+              >
+                Generate Bracket
+              </button>
+              <button className="btn btn-ghost" onClick={() => setGameTypeModal(null)}>
+                Cancel
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

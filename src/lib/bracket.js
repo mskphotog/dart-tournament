@@ -176,7 +176,7 @@
  * @param {number} gamesToWin - Games needed to win a match (e.g. 2 for best-of-3).
  * @returns {{ matches: Array, seedAssignments: Array }}
  */
-export function generateDoubleEliminationBracket(players, gamesToWin = 2) {
+export function generateDoubleEliminationBracket(players, gamesToWin = 2, topSeedPlayerId = null) {
   if (!players || players.length < 6 || players.length > 25) {
     throw new Error('Player count must be between 6 and 25');
   }
@@ -186,7 +186,16 @@ export function generateDoubleEliminationBracket(players, gamesToWin = 2) {
   const n = players.length;
 
   // ── Step 1: Randomly assign seeds ─────────────────────────────────────────
-  const shuffled = shuffleArray([...players]);
+  // If topSeedPlayerId is provided, that player is fixed as seed 1;
+  // the remaining players are shuffled for seeds 2..n.
+  let shuffled;
+  if (topSeedPlayerId) {
+    const topPlayer = players.find((p) => p.id === topSeedPlayerId);
+    const rest = shuffleArray(players.filter((p) => p.id !== topSeedPlayerId));
+    shuffled = topPlayer ? [topPlayer, ...rest] : shuffleArray([...players]);
+  } else {
+    shuffled = shuffleArray([...players]);
+  }
   const seedAssignments = shuffled.map((p, i) => ({ player_id: p.id, seed: i + 1 }));
   const seededPlayers   = shuffled.map((p, i) => ({ ...p, seed: i + 1 }));
 

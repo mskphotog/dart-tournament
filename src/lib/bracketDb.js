@@ -40,7 +40,7 @@ import { generateDoubleEliminationBracket } from './bracket';
  * @param {string} tournamentId - The tournament UUID
  * @returns {Promise<{success: boolean, error?: string}>}
  */
-export async function generateAndSaveBracket(tournamentId) {
+export async function generateAndSaveBracket(tournamentId, topSeedPlayerId = null) {
   try {
     // Step 1: Load tournament details (need games_to_win value)
     const { data: tournament, error: tErr } = await supabase
@@ -82,7 +82,8 @@ export async function generateAndSaveBracket(tournamentId) {
     }));
     const { matches, seedAssignments } = generateDoubleEliminationBracket(
       players,
-      gamesToWin
+      gamesToWin,
+      topSeedPlayerId
     );
 
     // Step 5: Update seeds on tournament_players
