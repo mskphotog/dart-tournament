@@ -51,6 +51,23 @@ export default function AdminTournamentPage() {
   const [scoringMatch, setScoringMatch] = useState(null);
   const [scoringError, setScoringError] = useState('');
 
+  // Seed map for WB R1 display: { playerId -> seedNumber }
+  // NOTE: Must be declared before any early returns (Rules of Hooks)
+  const seedByPlayerId = useMemo(() => {
+    const map = {};
+    for (const tp of tournamentPlayers) {
+      if (tp.seed != null) map[tp.player_id] = tp.seed;
+    }
+    return map;
+  }, [tournamentPlayers]);
+
+  // Board scheduling: compute next 2 matches to play
+  const playerHistory = useMemo(() => computePlayerHistory(matches), [matches]);
+  const nextBoardMatches = useMemo(
+    () => getNextMatchesForBoards(matches, playerHistory),
+    [matches, playerHistory]
+  );
+
   // Initial load + realtime subscription so the bracket auto-updates
   useEffect(() => {
     loadAll();
@@ -398,22 +415,6 @@ export default function AdminTournamentPage() {
 
   // Players list for the BracketDisplay component
   const playerListForBracket = tournamentPlayers.map((tp) => tp.player);
-
-  // Seed map for WB R1 display: { playerId -> seedNumber }
-  const seedByPlayerId = useMemo(() => {
-    const map = {};
-    for (const tp of tournamentPlayers) {
-      if (tp.seed != null) map[tp.player_id] = tp.seed;
-    }
-    return map;
-  }, [tournamentPlayers]);
-
-  // Board scheduling: compute next 2 matches to play
-  const playerHistory = useMemo(() => computePlayerHistory(matches), [matches]);
-  const nextBoardMatches = useMemo(
-    () => getNextMatchesForBoards(matches, playerHistory),
-    [matches, playerHistory]
-  );
 
   // Roster filtered for check-in: active players, not already checked in
   const checkedInIds = new Set(tournamentPlayers.map((tp) => tp.player_id));
