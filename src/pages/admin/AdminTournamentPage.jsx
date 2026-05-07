@@ -13,7 +13,7 @@
  * onMatchClick handler that opens a scoring modal.
  */
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import {
@@ -24,6 +24,7 @@ import {
   adminSwapPlayers,
 } from '../../lib/bracketDb';
 import BracketDisplay from '../../components/BracketDisplay';
+import { getNextMatchesForBoards, computePlayerHistory } from '../../lib/bracket';
 import '../../components/BracketDisplay.css';
 
 export default function AdminTournamentPage() {
@@ -194,8 +195,8 @@ export default function AdminTournamentPage() {
   async function handleGenerateBracket() {
     setBracketError('');
 
-    if (tournamentPlayers.length < 2) {
-      setBracketError('Need at least 2 checked-in players');
+    if (tournamentPlayers.length < 6) {
+      setBracketError('Need at least 6 checked-in players to generate a bracket');
       return;
     }
 
@@ -398,6 +399,22 @@ export default function AdminTournamentPage() {
   // Players list for the BracketDisplay component
   const playerListForBracket = tournamentPlayers.map((tp) => tp.player);
 
+  // Seed map for WB R1 display: { playerId -> seedNumber }
+  const seedByPlayerId = useMemo(() => {
+    const map = {};
+    for (const tp of tournamentPlayers) {
+      if (tp.seed != null) map[tp.player_id] = tp.seed;
+    }
+    return map;
+  }, [tournamentPlayers]);
+
+  // Board scheduling: compute next 2 matches to play
+  const playerHistory = useMemo(() => computePlayerHistory(matches), [matches]);
+  const nextBoardMatches = useMemo(
+    () => getNextMatchesForBoards(matches, playerHistory),
+    [matches, playerHistory]
+  );
+
   // Roster filtered for check-in: active players, not already checked in
   const checkedInIds = new Set(tournamentPlayers.map((tp) => tp.player_id));
   const searchLower = checkInSearch.trim().toLowerCase();
@@ -478,6 +495,8 @@ export default function AdminTournamentPage() {
         <InProgressMode
           matches={matches}
           players={playerListForBracket}
+          seedByPlayerId={seedByPlayerId}
+          nextBoardMatches={nextBoardMatches}
           onMatchClick={openScoringModal}
           onRegenerateBracket={handleRegenerateBracket}
           generatingBracket={generatingBracket}
@@ -636,14 +655,14 @@ function SetupMode({
         <h2>Generate Bracket</h2>
         <p className="text-secondary mb-4">
           Once all players have checked in, generate the bracket to begin the tournament.
-          Seeding and byes are randomized. {tournamentPlayers.length < 2 && 'You need at least 2 players.'}
+          Seeding and byes are randomized. Supports 6–25 players. {tournamentPlayers.length < 6 && `You need at least 6 players (${6 - tournamentPlayers.length} more).`}
         </p>
         {bracketError && <div className="form-error mb-3">{bracketError}</div>}
         <div className="flex gap-3 flex-wrap">
           <button
             className="btn btn-primary"
             onClick={onGenerateBracket}
-            disabled={generatingBracket || tournamentPlayers.length < 2}
+            disabled={generatingBracket || tournamentPlayers.length < 6}
           >
             {generatingBracket ? 'Generating...' : `Generate Bracket (${tournamentPlayers.length} players)`}
           </button>
@@ -741,14 +760,77 @@ function SetupMode({
 // IN_PROGRESS MODE: Live scoring
 // ============================================================================
 
-function InProgressMode({ matches, players, onMatchClick, onRegenerateBracket, generatingBracket }) {
+function InProgressMode({ matches, players, seedByPlayerId, nextBoardMatches, onMatchClick, onRegenerateBracket, generatingBracket }) {
   // Determine if any match has been scored yet
   const anyMatchPlayed = matches.some(
     (m) => m.status === 'in_progress' || m.status === 'completed'
   );
 
+  // Build a player lookup for the board panel
+  const playerById = {};
+  for (const p of players) playerById[p.id] = p;
+
+  // Build bracket label helper
+  const bracketLabel = (b) => ({
+    winners: "Winner's Bracket",
+    losers: "Loser's Bracket",
+    grand_final: 'Grand Final',
+    grand_final_reset: 'Bracket Reset',
+  }[b] || b);
+
   return (
     <>
+      {/* ── NEXT UP ON BOARDS ── */}
+      <div className="card mb-6 board-panel">
+        <h2 className="board-panel-title">Next Up on Boards</h2>
+        {nextBoardMatches.length === 0 ? (
+          <p className="text-secondary" style={{ marginBottom: 0 }}>
+            {matches.some((m) => m.status === 'in_progress')
+              ? 'Waiting for current matches to finish…'
+              : 'No matches ready to play.'}
+          </p>
+        ) : (
+          <div className="board-slots">
+            {nextBoardMatches.map((m, idx) => {
+              const p1 = m.player1_id ? playerById[m.player1_id] : null;
+              const p2 = m.player2_id ? playerById[m.player2_id] : null;
+              return (
+                <div
+                  key={m.id}
+                  className="board-slot"
+                  onClick={() => onMatchClick(m)}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="board-slot-header">
+                    <span className="board-slot-label">Board {idx + 1}</span>
+                    <span className="board-slot-meta">
+                      {bracketLabel(m.bracket)} · R{m.round} · M{m.match_number}
+                    </span>
+                  </div>
+                  <div className="board-slot-matchup">
+                    <span className="board-slot-player">{p1 ? p1.name : 'TBD'}</span>
+                    <span className="board-slot-vs">vs</span>
+                    <span className="board-slot-player">{p2 ? p2.name : 'TBD'}</span>
+                  </div>
+                </div>
+              );
+            })}
+            {/* Placeholder for 2nd board if only 1 match ready */}
+            {nextBoardMatches.length === 1 && (
+              <div className="board-slot board-slot-empty">
+                <div className="board-slot-header">
+                  <span className="board-slot-label">Board 2</span>
+                </div>
+                <div className="board-slot-matchup">
+                  <span className="text-secondary">Waiting…</span>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="card mb-6" style={{ backgroundColor: 'var(--color-warning-light)' }}>
         <h2 style={{ color: '#856404' }}>Live Scoring</h2>
         <p style={{ color: '#856404', marginBottom: 0 }}>
@@ -760,6 +842,7 @@ function InProgressMode({ matches, players, onMatchClick, onRegenerateBracket, g
       <BracketDisplay
         matches={matches}
         players={players}
+        seedByPlayerId={seedByPlayerId}
         onMatchClick={onMatchClick}
       />
 
@@ -784,6 +867,74 @@ function InProgressMode({ matches, players, onMatchClick, onRegenerateBracket, g
           </p>
         )}
       </div>
+
+      <style>{`
+        .board-panel-title {
+          margin-bottom: var(--space-4);
+        }
+        .board-slots {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: var(--space-4);
+        }
+        @media (max-width: 600px) {
+          .board-slots {
+            grid-template-columns: 1fr;
+          }
+        }
+        .board-slot {
+          border: 2px solid var(--color-primary);
+          border-radius: var(--radius-md);
+          padding: var(--space-4);
+          cursor: pointer;
+          transition: background-color var(--transition-fast);
+        }
+        .board-slot:hover {
+          background-color: var(--color-primary-light);
+        }
+        .board-slot-empty {
+          border-color: var(--color-border);
+          cursor: default;
+          opacity: 0.6;
+        }
+        .board-slot-empty:hover {
+          background-color: transparent;
+        }
+        .board-slot-header {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: var(--space-2);
+        }
+        .board-slot-label {
+          font-size: var(--font-size-sm);
+          font-weight: var(--font-weight-bold);
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          color: var(--color-primary);
+        }
+        .board-slot-meta {
+          font-size: var(--font-size-xs);
+          color: var(--color-text-secondary);
+        }
+        .board-slot-matchup {
+          display: flex;
+          align-items: center;
+          gap: var(--space-3);
+          flex-wrap: wrap;
+        }
+        .board-slot-player {
+          font-size: var(--font-size-lg);
+          font-weight: var(--font-weight-semibold);
+          flex: 1;
+          min-width: 80px;
+        }
+        .board-slot-vs {
+          font-size: var(--font-size-sm);
+          color: var(--color-text-secondary);
+          font-weight: var(--font-weight-medium);
+        }
+      `}</style>
     </>
   );
 }
